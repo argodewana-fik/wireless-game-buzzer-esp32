@@ -130,3 +130,142 @@ graph TD
         C3 -- "GND" --> Leg2(Button Leg 2)
     end
 ```
+# Software Setup (PlatformIO)
+
+This project is intended to be compiled and flashed using PlatformIO (PIO) inside **VS Code**.
+
+---
+
+## 📁 Project Layout (Recommended Workspace)
+```
+your-workspace/
+├─ Quiz_Buzzer_Host/
+│ ├─ src/
+│ │ └─ main.cpp
+│ └─ platformio.ini
+└─ Quiz_Buzzer_Sender/
+├─ src/
+│ └─ main.cpp
+└─ platformio.ini
+```
+
+---
+
+## ⚙️ PlatformIO Environment Config
+
+### `Quiz_Buzzer_Host/platformio.ini`
+
+> Host runs **WiFi AP**, **WebSocket server**, **ESP-NOW receiver**.
+
+```ini
+[env:esp32dev]
+platform = espressif32
+board = esp32dev
+framework = arduino
+lib_deps =
+    bblanchon/ArduinoJson@^6.19.4
+    esphome/ESPAsyncWebServer-esphome@^3.0.0
+monitor_speed = 115200
+```
+## 🔧 System Architecture
+
+The project uses a **Star Network Topology**:
+
+- The Host (ESP32-WROOM32) acts as the center.
+- All Sender units (ESP32-C3) transmit directly to the Host using ESP-NOW.
+- The Judge connects to the Host's Access Point over WiFi and controls the round.
+
+```mermaid
+graph TD
+    subgraph "Sender Units (Teams)"
+        direction TB
+        S_A(Physical Button A) --> C3_A[ESP32-C3 'A']
+        S_B(Physical Button B) --> C3_B[ESP32-C3 'B']
+        S_C(Physical Button C) --> C3_C[ESP32-C3 'C']
+    end
+
+    subgraph "Central Unit (Host / Judge)"
+        direction LR
+        Host[ESP32-WROOM32 Host]
+        Judge(Judge's Device: Phone/Laptop)
+
+        Host -- "1. Creates Network" --> AP((WiFi AP 'Smart Bell'))
+        Judge -- "2. Connects to WiFi" --> AP
+        Host -- "4. Real-time UI Update" --> Judge
+        Judge -- "3. Open IP & Send Commands" --> Host
+    end
+
+    C3_A -- "ESP-NOW Data (ID: 'A')" --> Host
+    C3_B -- "ESP-NOW Data (ID: 'B')" --> Host
+    C3_C -- "ESP-NOW Data (ID: 'C')" --> Host
+```
+
+esp 32c3 platform.ini
+```ini
+[env:esp32-c3-devkitm-1]
+platform = espressif32
+board = esp32-c3-devkitm-1
+framework = arduino
+monitor_speed = 115200
+```
+### Bagian 2: Proses Flashing (Ringkasan Tabel)
+
+Ini adalah bagian heading dan tabel ringkasan langkah. Format tabel di Markdown menggunakan `|` (pipa) dan `-` (setrip).
+
+## 🔁 Flashing & Pairing Process
+
+This sequence matters because the Sender must know the Host's MAC address.
+
+### 📝 Step Overview
+
+| Step | Action | Device | Output / Goal |
+| :--- | :--- | :--- | :--- |
+| 1 | Flash Host firmware (`Quiz_Buzzer_Host/src/main.cpp`) | ESP32-WROOM32 (Host) | Host boots, starts AP, prints MAC address |
+| 2 | Read MAC address from Serial Monitor (115200 baud) | ESP32-WROOM32 (Host) | Get Host's ESP-NOW / AP MAC |
+| 3 | Paste that MAC into the Sender code (`broadcastAddress[]`) | ESP32-C3 (Sender) | Sender knows where to send packets |
+| 4 | Set a unique team ID (`TEAM_A`, `TEAM_B`, etc.) | ESP32-C3 (Sender) | Identify which team won |
+| 5 | Flash each Sender with personalized firmware | ESP32-C3 units | All Senders report to same Host with unique IDs |
+
+### 🛠️ Detailed Instructions
+
+#### ✅ Flash the Host
+* Put the Host code (`main.cpp`) into `Quiz_Buzzer_Host/src/`
+* Upload to ESP32-WROOM32
+
+#### 🔍 Get Host MAC Address
+* Open Serial Monitor at 115200
+* Copy the printed MAC address
+
+#### ✏️ Configure Each Sender
+* Open `Quiz_Buzzer_Sender/src/main.cpp`
+* Set `broadcastAddress` to the Host's MAC
+* Set a unique team ID:
+    ```cpp
+    const char* TEAM_ID = "TEAM_A"; // or TEAM_B, TEAM_C, ...
+    ```
+
+#### 🚀 Flash Each Sender
+* Upload code to each ESP32-C3
+* All Senders now report to the same Host
+
+### 🎮 How to Use (Operation Flow)
+
+| Step | Actor | Action | Result |
+| :--- | :--- | :--- | :--- |
+| 1 | Setup | Power on all units (1 Host + all Senders) | Host boots AP + Web Server + WebSocket. Senders idle. |
+| 2 | Judge | On phone/laptop, connect to `Smart Bell` WiFi | Judge joins Host's local network |
+| 3 | Judge | Open browser &rarr; go to `http://192.168.4.1` | Judge Interface (control panel) loads |
+| 4 | Judge | Press "START ROUND" in the UI | Unlocks system: `sistemTerkunci = false` |
+| 5 | Contestants | Press physical buttons | First Sender sends ESP-NOW packet |
+| 6 | Host FW | Detects 1st valid press, sets `sistemTerkunci = true` | Ignores further presses |
+| 7 | Dashboard | Web UI auto-updates via WebSocket | Shows "WINNER: A", triggers sound |
+| 8 | Judge | Press "RESET" in UI | System unlocks for next round |
+
+### 🚧 Current Limitations & Weaknesses
+
+| Limitation | Details |
+| :--- | :--- |
+| **Security** | WiFi AP is open (no WPA2). Use only in controlled environments. |
+| **No Logging** | No persistent match log. Resetting Host clears history. |
+| **Range** | ~100–200m line-of-sight. Walls reduce range. |
+| **Power** | Units expect continuous USB/battery. No deep sleep optimization. |
