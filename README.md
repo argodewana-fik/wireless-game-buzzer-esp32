@@ -43,38 +43,6 @@ The core idea is to separate the "Button" (Sender) from the "Brain" (Host).
 
 ---
 
-## 🔧 System Architecture
-
-The project uses a **Star Network Topology**:
-
-- The Host (ESP32-WROOM32) acts as the center.
-- All Sender units (ESP32-C3) transmit directly to the Host using ESP-NOW.
-- The Judge connects to the Host's Access Point over WiFi and controls the round.
-
-```mermaid
-graph TD
-    subgraph "Sender Units (Teams)"
-        direction TB
-        S_A(Physical Button A) --> C3_A[ESP32-C3 'A']
-        S_B(Physical Button B) --> C3_B[ESP32-C3 'B']
-        S_C(Physical Button C) --> C3_C[ESP32-C3 'C']
-    end
-
-    subgraph "Central Unit (Host / Judge)"
-        direction LR
-        Host[ESP32-WROOM32 Host]
-        Judge(Judge's Device: Phone/Laptop)
-
-        Host -- "1. Creates Network" --> AP((WiFi AP 'Smart Bell'))
-        Judge -- "2. Connects to WiFi" --> AP
-        Host -- "4. Real-time UI Update" --> Judge
-        Judge -- "3. Open IP & Send Commands" --> Host
-    end
-
-    C3_A -- "ESP-NOW Data (ID: 'A')" --> Host
-    C3_B -- "ESP-NOW Data (ID: 'B')" --> Host
-    C3_C -- "ESP-NOW Data (ID: 'C')" --> Host
-```
 # 🛠️ Hardware Requirements
 
 | No. | Component              | Qty | Est. Unit Price (IDR)           | Notes                          |
