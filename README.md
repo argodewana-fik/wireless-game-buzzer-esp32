@@ -176,10 +176,6 @@ board = esp32-c3-devkitm-1
 framework = arduino
 monitor_speed = 115200
 ```
-### Bagian 2: Proses Flashing (Ringkasan Tabel)
-
-Ini adalah bagian heading dan tabel ringkasan langkah. Format tabel di Markdown menggunakan `|` (pipa) dan `-` (setrip).
-
 ## 🔁 Flashing & Pairing Process
 
 This sequence matters because the Sender must know the Host's MAC address.
