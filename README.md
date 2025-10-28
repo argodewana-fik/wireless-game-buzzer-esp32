@@ -74,3 +74,59 @@ graph TD
     C3_A -- "ESP-NOW Data (ID: 'A')" --> Host
     C3_B -- "ESP-NOW Data (ID: 'B')" --> Host
     C3_C -- "ESP-NOW Data (ID: 'C')" --> Host
+```
+# 🛠️ Hardware Requirements
+
+| No. | Component              | Qty | Est. Unit Price (IDR)           | Notes                          |
+|-----|------------------------|-----|----------------------------------|--------------------------------|
+| 1   | ESP32-C3 Super Mini    | 3   | Rp 60.000                        | For 3 Sender Button units      |
+| 2   | ESP32-WROOM32 DevKit  | 1   | Rp 300.000 (can be cheaper)      | For 1 Host / Server unit       |
+| 3   | Push Button            | 3   | Rp 5.000                         | Physical button for each Sender|
+| 4   | Pin Headers            | 4   | Rp 10.000                        | Connectors                     |
+| 5   | Misc (wires, board, etc) | - | Rp 50.000                        | Jumper wires, protoboard, etc. |
+
+**Total Estimated Cost:** ~Rp 585.000
+
+---
+
+# 🔌 Hardware Design (Wiring)
+
+## Host Unit (ESP32-WROOM32)
+
+| Signal / Pin | Connection       |
+|--------------|------------------|
+| 5V / 3V3 / GND | Power via USB cable |
+| GPIOs        | (None needed for basic demo) |
+| Extra Peripherals | Not required |
+
+> Just power it via USB.  
+> It will create WiFi AP + run the judge UI + receive ESP-NOW packets.
+
+---
+
+## Sender Unit (ESP32-C3)
+
+> Very simple, no external resistor needed.
+
+| Sender Part       | Connects To                          |
+|-------------------|--------------------------------------|
+| Push Button Leg 1 | GPIO 5 (or pin defined in code)      |
+| Push Button Leg 2 | GND                                  |
+| Power             | Via USB or battery                   |
+| Internal Pull-up  | Yes (`INPUT_PULLUP` in firmware)     |
+
+**In code:**
+```cpp
+pinMode(BUTTON_PIN, INPUT_PULLUP);
+// Button press is detected when the pin reads LOW.
+```
+
+```mermaid
+graph TD
+    subgraph "Sender Button Unit (Team A)"
+        C3[ESP32-C3 SuperMini]
+        Btn[Push Button]
+        C3 -- "GPIO 5" --> Leg1(Button Leg 1)
+        C3 -- "GND" --> Leg2(Button Leg 2)
+    end
+```
